@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+#
+# mk_hdr
+#
+# create an HDR image from a series of input images
+
+
+# https://de.mathworks.com/help/images/ref/makehdr.html
+# http://linuxdarkroom.tassy.net/hdr-creation-script/
+
+

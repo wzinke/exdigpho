@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#
+# mk_jitter
+#
+# create a compound image where jittered (differently cropped)versions of
+# one image are averaged
+
+
+

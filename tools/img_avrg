@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+#
+# img_avrg
+#
+# combine a series of images in a single average image
+
+#
+# w. zinke
+Usage() {
+cat << EOF
+
+    Usage: $0 <fllst> [options]
+
+    Average a set of image files into a single image.
+
+    OPTIONS:
+            -o        file name for the averaged image
+            -typ      Method used for averaging, available options are:
+                        dark, light, multi, overlay, screen, interpol, avrg, calc (default) 
+            -blend    blending level (0-100)
+EOF
+    exit 1
+}
+
+if [ $# -lt 1 ]; then
+    Usage
+else
+    fllst="$1"
+    shift
+fi
+
+# set defaults
+outfl="avrg_imag.png"
+avrgtyp="calc"
+blnd=""
+
+# get options
+eval_str=""
+while [ $# -gt 0 ] ;
+do
+    case $1 in
+        -o)     outfl=$2
+                 shift 2
+                 ;;
+        -typ)    avrgtyp=$2
+                 shift 2
+                 ;;
+        -blend)  blnd="-blend 100x$2"
+                 shift 2
+                 ;;
+         -*)     Usage
+                 ;;
+          *)     break
+                 ;;
+    esac
+done
+
+# looping over the files to add them. This needs to be done, because otherwise 
+# all files will be loaded into the memory at once, likely causing a crash
+i=0
+for file in $fllst
+do
+    echo -n "$file.. "
+    
+    if [ $i -eq 0 ]
+    then
+        cp $file $outfl
+    else
+    
+        case $avrgtyp in
+    
+            dark)
+                convert $file $outfl $blnd -compose lighten -flatten $outfl
+                ;;
+            
+            light)
+                convert $file $outfl $blnd -compose lighten -flatten $outfl
+                ;;
+                
+            multi)
+                convert $file $outfl $blnd -compose multiply -flatten $outfl
+                ;;
+
+            screen)
+                convert $file $outfl $blnd -compose screen -flatten $outfl
+                ;;
+                
+            interpol)
+                convert $file $outfl $blnd -compose interpolate -flatten $outfl
+                ;;
+                
+            overlay)
+                convert $file $outfl $blnd -compose Overlay -flatten $outfl
+                ;;
+
+             avrg)
+                convert $file $outfl $blnd -evaluate-sequence Mean $outfl
+                ;;
+
+            calc)
+                convert $file $outfl $blnd -fx "(u+$i*v)/$[$i+1]" -flatten $outfl
+                ;;
+                
+            *)
+                echo -n "unknown averaging type '$avrgtyp'"
+                ;;
+        esac
+
+    fi
+    
+    i=$[$i+1]
+done    
+ 
+# https://imagemagick.org/script/compose.php 
+# https://legacy.imagemagick.org/Usage/compose/#math
+
+
