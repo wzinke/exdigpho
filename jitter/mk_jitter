@@ -2,8 +2,165 @@
 #
 # mk_jitter
 #
-# create a compound image where jittered (differently cropped)versions of
-# one image are averaged
+# ToDo: 
+#       * add zooming in/out, rotation, image blur, different tone map etc
+#       * specify distribution of jittering (right now it is uniform)
+#
+# w. zinke
 
 
 
+Usage() {
+cat << EOF
+
+    Usage: $0 <flnm> [options]
+
+        takes an input image and jitters it N-times and averages all images
+
+    OPTIONS:
+            -o      output file name of the averaged image
+            -tmp    directory name to store temporary files
+            -keep   do not delete temporary files (for debugging)
+            -Px     percentage proportion in x direction to jitter
+            -Py     percentage proportion in y direction to jitter
+            -n      number of images to generate
+            -typ    Method used for averaging, available options are:
+                      dark, light, multi, overlay, screen, interpol, avrg, calc (default) 
+            -blend  blending level (0-100)
+
+EOF
+exit 1
+}
+
+if [ $# -lt 1 ]
+then
+    Usage
+else
+    flnm="$1"
+    shift
+fi
+
+#----------------------------------------------------------------------#
+# define defaults
+ofl="jittered_image.png"
+do_keep=0
+do_tmp=1
+N=25
+avrgtyp="calc"
+blnd=""
+
+Px=10
+Py=10
+
+#----------------------------------------------------------------------#
+# check input arguments
+while [ $# -gt 0 ] ;
+do
+    case $1 in
+        -o)     ofl="$2"
+                shift 2
+                ;;
+        -keep)  do_keep=1
+                shift
+                ;;
+        -tmp)   tmpdir="$2"
+                do_tmp=0
+                shift 2
+                ;;
+        -n)     N="$2"
+                shift 2
+                ;;
+        -Px)    Px="$2"
+                shift 2
+                ;;
+        -Py)    Py="$2"
+                shift 2
+                ;;
+        -typ)   avrgtyp=$2
+                shift 2
+                ;;
+        -blend) blnd="-blend $2"
+                shift 2
+                ;;
+          -*)   echo "Wrong option: <$1>"
+                echo ""
+                Usage
+                ;;
+           *)   break
+                ;;
+    esac
+done
+
+#----------------------------------------------------------------------#
+# make temporary directory
+if [ $do_tmp -eq 1 ]
+then
+    tmpdir="$(mktemp -d imgjitt_XXXXXXX)"
+else
+    mkdir -p $tmpdir
+fi
+    
+echo "Temporary directory: $tmpdir"    
+    
+#----------------------------------------------------------------------#
+# prepare processing
+
+# get image dimensions
+Xdim=$(identify -format "%w"  $flnm)
+Ydim=$(identify -format "%h"  $flnm)
+
+# calculate number of cropped pixels for each side
+X_halfcrop=$(echo "scale=2;$Px/200*$Xdim" | bc | awk '{print int($1+0.5)}')
+Y_halfcrop=$(echo "scale=2;$Py/200*$Ydim" | bc | awk '{print int($1+0.5)}')
+
+Xfull=$(($X_halfcrop + $X_halfcrop))
+Yfull=$(($Y_halfcrop + $Y_halfcrop))
+
+#----------------------------------------------------------------------#
+# loop over number of iterations   
+
+cnt=1
+
+# get a symmetric crop as first image
+convert $flnm -gravity north -chop 0x${Y_halfcrop}  \
+              -gravity south -chop 0x${Y_halfcrop}  \
+              -gravity east  -chop ${X_halfcrop}x0  \
+              -gravity west  -chop ${X_halfcrop}x0 $tmpdir/Jitt_img_${cnt}.png
+
+# cp $tmpdir/Jitt_img_${cnt}.png $ofl
+
+fllst="$tmpdir/Jitt_img_${cnt}.png"    
+
+for i in $(seq 1 $(($N-1)))
+do
+    cnt=$(($cnt + 1))
+    
+    # calculate random cropping of margins
+    xl=$(echo $(( RANDOM % $(($Xfull+1)) )))
+    xr=$(($Xfull - $xl))
+    yt=$(echo $(( RANDOM % $(($Yfull+1)) )))
+    yb=$(($Yfull - $yt))
+    
+    convert $flnm -gravity north -chop 0x${yt}  \
+                  -gravity south -chop 0x${yb}  \
+                  -gravity east  -chop ${xl}x0  \
+                  -gravity west  -chop ${xr}x0 $tmpdir/Jitt_img_${cnt}.png
+                  
+    fllst="$fllst $tmpdir/Jitt_img_${cnt}.png"
+    
+#     img_avrg "$ofl $tmpdir/Jitt_img_${cnt}.png" $blnd -typ $avrgtyp -o $ofl  
+    
+done # | whiptail --title 'Image Jittering' --gauge 'Running...' 6 60 0
+   
+#----------------------------------------------------------------------#
+
+img_avrg "$fllst" $blnd -typ $avrgtyp -o $ofl  
+    
+#----------------------------------------------------------------------#
+
+if [ $do_keep -eq 0 ]
+then
+    rm -r $tmpdir
+fi
+
+    

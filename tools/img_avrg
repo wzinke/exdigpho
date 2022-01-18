@@ -6,6 +6,8 @@
 
 #
 # w. zinke
+
+
 Usage() {
 cat << EOF
 
@@ -60,11 +62,14 @@ done
 i=0
 for file in $fllst
 do
-    echo -n "$file.. "
+#     echo -n "$file.. "
     
     if [ $i -eq 0 ]
     then
-        cp $file $outfl
+        if [ "$file" != "$outfl" ]
+        then
+            cp $file $outfl
+        fi
     else
     
         case $avrgtyp in
@@ -85,9 +90,9 @@ do
                 convert $file $outfl $blnd -compose screen -flatten $outfl
                 ;;
                 
-            interpol)
-                convert $file $outfl $blnd -compose interpolate -flatten $outfl
-                ;;
+#             interpol)
+#                 convert $file $outfl $blnd -compose interpolate -flatten $outfl
+#                 ;;
                 
             overlay)
                 convert $file $outfl $blnd -compose Overlay -flatten $outfl
@@ -109,7 +114,7 @@ do
     fi
     
     i=$[$i+1]
-done    
+done # | whiptail --title 'Image Averaging' --gauge 'Running...' 6 60 0 
  
 # https://imagemagick.org/script/compose.php 
 # https://legacy.imagemagick.org/Usage/compose/#math

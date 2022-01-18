@@ -9,3 +9,9 @@
 # http://linuxdarkroom.tassy.net/hdr-creation-script/
 
 
+# https://towardsdatascience.com/a-simple-hdr-implementation-on-opencv-python-2325dbd9c650
+# https://docs.opencv.org/3.4/d3/db7/tutorial_hdr_imaging.html
+# https://github.com/fthaler/rawhdr
+# https://github.com/wzinke/EnhanceHDR
+# https://colour-hdri.readthedocs.io/en/latest/manual.html
+# https://learnopencv.com/high-dynamic-range-hdr-imaging-using-opencv-cpp-python/
