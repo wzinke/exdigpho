@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+#
+# png2jpg
+#
+# Simple wrapper to quickly convert all png files in a directory to jpg files
+#
+# w. zinke
+
+
+# if no list of *.png files is provided as input,
+# then convert all files in the current directory
+if [ $# -eq 0 ]
+then
+    fllst=$(ls -1 *.png)
+
+else
+    fllst="$1"
+fi
+
+
+# define conversion function
+ConvFun() {
+
+    cfl=$1
+    
+    flstem="${cfl%.*}"
+    
+    convert $cfl -strip -quality 100% -dither None \
+                 -colorspace sRGB  ${flstem}.jpg                  
+                  
+    jpegoptim --max=95 --all-progressive -q ${flstem}.jpg       
+}
+
+export -f ConvFun
+
+# run conversion in parallel using all available CPU threads
+parallel --bar ConvFun ::: $fllst
