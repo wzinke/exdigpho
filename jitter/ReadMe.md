@@ -37,4 +37,4 @@ The resulting image looks like this:
 
 |![Magdeburg Buckau](MD_Buckau.png)|
 |----|
-|**Fig. 4:** Original image|
+|**Fig. 4:** Jittered image|

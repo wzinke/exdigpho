@@ -3,7 +3,9 @@
 # img_avrg
 #
 # combine a series of images in a single average image
-
+#
+# ToDo:
+#       * add progress bar
 #
 # w. zinke
 
@@ -62,32 +64,35 @@ done
 i=0
 for file in $fllst
 do
-#     echo -n "$file.. "
+    i=$(($i+1))
+
+    echo -n "$file.. "
     
-    if [ $i -eq 0 ]
+    if [ $i -eq 1 ]
     then
         if [ "$file" != "$outfl" ]
         then
             cp $file $outfl
+            
         fi
     else
     
         case $avrgtyp in
     
             dark)
-                convert $file $outfl $blnd -compose lighten -flatten $outfl
+                convert $file $outfl $blnd -background black -compose lighten -flatten $outfl
                 ;;
             
             light)
-                convert $file $outfl $blnd -compose lighten -flatten $outfl
+                convert $file $outfl $blnd -background black -compose lighten -flatten $outfl
                 ;;
                 
             multi)
-                convert $file $outfl $blnd -compose multiply -flatten $outfl
+                convert $file $outfl $blnd -background white -compose multiply -flatten $outfl
                 ;;
 
             screen)
-                convert $file $outfl $blnd -compose screen -flatten $outfl
+                convert $file $outfl $blnd -background black -compose screen -flatten $outfl
                 ;;
                 
 #             interpol)
@@ -95,7 +100,7 @@ do
 #                 ;;
                 
             overlay)
-                convert $file $outfl $blnd -compose Overlay -flatten $outfl
+                convert $file $outfl $blnd -background white -compose overlay -flatten $outfl
                 ;;
 
              avrg)
@@ -112,8 +117,6 @@ do
         esac
 
     fi
-    
-    i=$[$i+1]
 done # | whiptail --title 'Image Averaging' --gauge 'Running...' 6 60 0 
  
 # https://imagemagick.org/script/compose.php 

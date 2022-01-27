@@ -11,11 +11,11 @@
 # then convert all files in the current directory
 if [ $# -eq 0 ]
 then
-    fllst=$(ls -1 *.NEF)
-
-else
     fllst=$(find . -maxdepth 1 -type f -exec file --mime-type {} \+ | \
             awk -F: '{if ($2 ~/image\//) print $1}' | cut -d/ -f2)
+else
+    fllst="$1"
+    shift
 fi
 
 
