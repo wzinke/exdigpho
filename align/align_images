@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+#
+# align_images
+#
+# allign to images to match each other
+
+
+# http://enblend.sourceforge.net/
+# https://sites.google.com/site/alistargazing/home/image-processing/time-lapse-deshake
+# https://web.archive.org/web/20160926100356/http://wiki.panotools.org/Align_image_stack
+# https://imagej.net/plugins/ds4h-image-alignment
