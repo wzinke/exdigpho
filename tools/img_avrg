@@ -13,12 +13,13 @@
 Usage() {
 cat << EOF
 
-    Usage: $0 <fllst> [options]
+    Usage: $0 [options]
 
     Average a set of image files into a single image.
 
     OPTIONS:
             -o        file name for the averaged image
+            -lst      list of files to be averaged
             -typ      Method used for averaging, available options are:
                         dark, light, multi, overlay, screen, interpol, avrg, calc (default) 
             -blend    blending level (0-100)
@@ -26,23 +27,21 @@ EOF
     exit 1
 }
 
-if [ $# -lt 1 ]; then
-    Usage
-else
-    fllst="$1"
-    shift
-fi
-
 # set defaults
 outfl="avrg_imag.png"
 avrgtyp="calc"
 blnd=""
+get_fls=1
 
 # get options
 eval_str=""
 while [ $# -gt 0 ] ;
 do
     case $1 in
+        -lst)    fllst="$2"
+                 get_fls=0
+                 shift 2
+                 ;;
         -o)     outfl=$2
                  shift 2
                  ;;
@@ -58,6 +57,15 @@ do
                  ;;
     esac
 done
+
+# if no list of image files is provided as input,
+# then convert all files in the current directory
+if [ $get_fls -eq 1 ]
+then
+    fllst=$(find . -maxdepth 1 -type f -exec file --mime-type {} \+ | \
+            awk -F: '{if ($2 ~/image\//) print $1}' | cut -d/ -f2)
+fi
+
 
 # looping over the files to add them. This needs to be done, because otherwise 
 # all files will be loaded into the memory at once, likely causing a crash

@@ -6,22 +6,67 @@
 #
 # w. zinke
 
+Usage() {
+cat << EOF
+
+    Usage: $0  [options]
+
+    Average a set of image files into a single image.
+
+    OPTIONS:
+            -lst      list of image files to be converted
+            -o        output directory
+            -max      maximal size of one edge (in pixel)
+            -max      minimal size of one edge (in pixel)
+EOF
+    exit 1
+}
+
+
+# default options
+rszstr="1500x1500^"
+odir="rszd"
+get_fls=1
+
+# get options
+while [ $# -gt 0 ] ;
+do
+    case $1 in
+        -o)      odir=$2
+                 shift 2
+                 ;;
+        -max)    rszstr="${2}x${2}"
+                 shift 2
+                 ;;
+        -min)    rszstr="${2}x${2}^"
+                 shift 2
+                 ;;
+        -lst)    fllst="$2"
+                 get_fls=0
+                 shift 2
+                 ;;
+         -*)     Usage
+                 ;;
+          *)     break
+                 ;;
+    esac
+done
 
 # if no list of image files is provided as input,
 # then convert all files in the current directory
-if [ $# -eq 0 ]
+if [ $get_fls -eq 1 ]
 then
     fllst=$(find . -maxdepth 1 -type f -exec file --mime-type {} \+ | \
             awk -F: '{if ($2 ~/image\//) print $1}' | cut -d/ -f2)
-else
-    fllst="$1"
-    shift
 fi
-
 
 # as default, converted files will be stored in a subdirectory 'rszd'
 # Be aware, that right now, this will overwrite existing files
-mkdir -p rszd
+mkdir -p $odir
+
+# ensure that variabels are passed on to the parallel function
+export rszstr
+export odir
 
 # define the function to resize images
 RSZfun() {
@@ -30,13 +75,12 @@ RSZfun() {
     
     flstem="${cfl%.*}"
     
-    convert $cfl  -strip -quality 96% -dither None \
+    convert $cfl  -strip -quality 98% -dither None \
                   -define jpeg:fancy-upsampling=on \
-                  -colorspace sRGB -resize 1200x1200^ rszd/${flstem}.jpg                  
+                  -colorspace sRGB -resize ${rszstr} $odir/${flstem}.jpg                  
 #                   -filter LanczosRadius  -sigmoidal-contrast 7.5  \
                   
-                  
-     jpegoptim --max=95 --all-progressive -q rszd/${flstem}.jpg              
+     jpegoptim --max=98 --all-progressive -o -q $odir/${flstem}.jpg              
 }
 
 export -f RSZfun

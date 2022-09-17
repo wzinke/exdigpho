@@ -7,20 +7,62 @@
 # w. zinke
 
 
+Usage() {
+cat << EOF
+
+    Usage: $0  [options]
+
+    Convert the Nikon raw images to png files
+
+    OPTIONS:
+            -lst      list of image files to be converted
+            -o        output directory
+            -nw       do not apply white balance
+            -max      minimal size of one edge (in pixel)
+EOF
+    exit 1
+}
+
+# default options
+wbstr="-w"
+odir="pngdir"
+get_fls=1
+
+# get options
+while [ $# -gt 0 ] ;
+do
+    case $1 in
+        -o)      odir=$2
+                 shift 2
+                 ;;
+        -nw)     wbstr="-W -w"
+                 shift 
+                 ;;
+        -lst)    fllst="$2"
+                 get_fls=0
+                 shift 2
+                 ;;
+         -*)     Usage
+                 ;;
+          *)     break
+                 ;;
+    esac
+done
+
 # if no list of *.NEF files is provided as input,
 # then convert all files in the current directory
-if [ $# -eq 0 ]
+if [ $get_fls -eq 1 ]
 then
     fllst=$(ls -1 *.NEF)
-
-else
-    fllst="$1"
 fi
-
 
 # as default, converted files will be stored in a subdirectory 'pngdir'
 # Be aware, that right now, this will overwrite existing files
-mkdir pngdir
+mkdir -p $odir
+
+# ensure that variabels are passed on to the parallel function
+export wbstr
+export odir
 
 # define conversion function
 ConvFun() {
@@ -31,7 +73,8 @@ ConvFun() {
     
     # denef --width=4000 --height=4000 --outfile=${flstem}.png $cfl
     
-    dcraw -c -w $cfl | pnmtopng > pngdir/${flstem}.png
+    # dcraw -c $wbstr -o 0 -q 3 -4 $cfl | pnmtopng > $odir/${flstem}.png
+    dcraw -c $wbstr  $cfl | pnmtopng > $odir/${flstem}.png
     
     # optipng -o6 -preserve -clobber  pngdir/${flstem}.png
 # pnmtojpeg
@@ -42,10 +85,11 @@ export -f ConvFun
 # run conversion in parallel using all available CPU threads
 parallel --bar ConvFun ::: $fllst
 
+# http://osp.wikidot.com/raw
 
-
-
-
+# http://manpages.ubuntu.com/manpages/trusty/man1/dcraw.1.html
+# http://www.guillermoluijk.com/tutorial/dcraw/index_en.htm
+#
 # dcraw
 # 
 # Raw photo decoder "dcraw" v9.28
