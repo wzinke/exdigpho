@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+#
+# nefsort
+#
+# wrapper for the exiftool to sort RAW image files into 
+#     a directory structure that includes camera, and date.
+#
+# w. zinke
+
+# To get all NEF files recursivly in the current directory type:
+#     find . -type f -name *.NEF
+#     find . -type f -name "*.NEF"  | rev | cut -d/ -f2- | rev | sort -u > nef_dirs.txt
+#
+# exiftool -a -G1 -s   DSC_5147.NEF # get a summary of all tags
+
+
+
+
+Usage() {
+cat << EOF
+
+    Usage: $0  [options]
+
+    sort RAW image files into a directory structure that includes camera, and date
+
+    OPTIONS:
+            -lst      list of image files to be sorted (as default all files in current directory)
+            -txt      text file listing all NEF files
+            -dl       text file listing directories containing nef files
+            -dir      target root directory
+            -mv       move files instead of copying (NIY)
+EOF
+    exit 1
+}
+
+# default options
+odir=$(pwd)
+get_fls=1
+read_txt=0
+
+# get options
+while [ $# -gt 0 ] ;
+do
+    case $1 in
+        -dir)    odir=$2
+                 shift 2
+                 ;;
+        -lst)    fllst="$2"
+                 get_fls=0
+                 shift 2
+                 ;;
+        -txt)    fllst="$2"
+                 get_fls=0
+                 read_txt=1
+                 shift 2
+                 ;;
+        -dl)     fllst="$2"
+                 get_fls=0
+                 read_txt=2
+                 shift 2
+                 ;;
+         -*)     Usage
+                 ;;
+          *)     break
+                 ;;
+    esac
+done
+
+# if no list of *.NEF files is provided as input,
+# then convert all files in the current directory. 
+# Right now, this is Nikon specific.
+if [ $get_fls -eq 1 ]
+then
+    fllst=$(ls -1 *.NEF)
+fi
+
+# as default, converted files will be stored in a subdirectory 'pngdir'
+# Be aware, that right now, this will overwrite existing files
+mkdir -p $odir
+
+# ensure that variabels are passed on to the parallel function
+export odir
+
+# define conversion function
+sort_fl() {
+    cfl=$1
+    pp3fl="$cfl.pp3"
+    flnm=$( exiftool -T -FileName          $cfl)
+    cTyp=$( exiftool -T -Model             $cfl | cut -d' ' -f2)
+    cDate=$(exiftool -T -DateTimeOriginal  $cfl | cut -d' ' -f1)
+    flext=$(exiftool -T -FileTypeExtension $cfl)
+    
+    flstem="$(echo $cfl | rev | cut -d. -f2- | rev)"
+        
+    #flstem="${cfl%.*}"
+    cY=$(echo $cDate | cut -d: -f1)
+    cM=$(echo $cDate | cut -d: -f2)
+    cD=$(echo $cDate | cut -d: -f3)
+    trgtdir="$odir/$cY/$cM/$cD/$cTyp"
+    trgtfl="$trgtdir/$flstem.$flext"
+    mkdir -p $trgtdir
+    
+    if [ ! -f $trgtfl ]
+    then
+        cp $cfl $trgtfl
+    fi
+    
+    if [ -f $pp3fl ]
+    then
+        trgtpp3="$trgtfl.pp3"
+        
+        if [ ! -f $trgtpp3 ]
+        then
+            cp $pp3fl $trgtpp3
+        fi       
+    fi
+
+}
+
+export -f sort_fl
+
+# run conversion in parallel using all available CPU threads
+
+
+case $read_txt in
+    0)
+        parallel --bar sort_fl ::: $fllst
+        ;;
+    1)
+        cat  $fllst | parallel --bar sort_fl 
+        ;;
+    2)
+        cwd=$(pwd)
+        while read line
+        do 
+            echo " *** Processing $line"
+            cd $line
+            nef_sort -dir $odir 
+        done < $fllst
+        cd $cwd
+        ;;
+esac       
+
