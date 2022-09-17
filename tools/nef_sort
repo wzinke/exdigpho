@@ -8,8 +8,8 @@
 # w. zinke
 
 # To get all NEF files recursivly in the current directory type:
-#     find . -type f -name *.NEF
-#     find . -type f -name "*.NEF"  | rev | cut -d/ -f2- | rev | sort -u > nef_dirs.txt
+#     find $(pwd) -type f -name *.NEF
+#     find $(pwd) -type f -name "*.NEF"  | rev | cut -d/ -f2- | rev | sort -u > nef_dirs.txt
 #
 # exiftool -a -G1 -s   DSC_5147.NEF # get a summary of all tags
 
