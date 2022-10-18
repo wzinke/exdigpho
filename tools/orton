@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+#
+# orton
+#
+# Create an orton effect of a given image
+#
+# See: http://www.fmwconcepts.com/imagemagick/ortoneffect/index.php
+#
+# w. zinke
+
+Usage() {
+cat << EOF
+
+    Usage: $0  <flnm> [options]
+
+    Create a blurred version of a given image and combine both images
+    to create a resulting image showing an orton effect.
+
+    OPTIONS:
+            -o      output file name
+            -b      gaussian bluer
+            -t      transparency
+EOF
+    exit 1
+}
+
+
+if [ $# -lt 1 ]; then
+    Usage
+else
+    flnm=$1
+    flstem=$(echo $1 | rev | cut -d. -f2- | rev)
+    flext=$( echo $1 | rev | cut -d. -f1  | rev)
+    shift
+fi
+
+# default options
+onm="${flstem}_orton.${flext}"
+blur_val=10
+trans_val=70
+
+# get options
+while [ $# -gt 0 ] ;
+do
+    case $1 in
+        -o)      onm=$2
+                 shift 2
+                 ;;
+        -b)      blur_val="$2"
+                 shift 2
+                 ;;
+        -t)      trans_val="$2"
+                 shift 2
+                 ;;
+         -*)     Usage
+                 ;;
+          *)     break
+                 ;;
+    esac
+done
+
+
+# tmp_dir=$(mktemp -d -t orton_XXXXX)
+
+# # read and test image
+# convert -quiet "$flnm" +repage "$tmp_dir/OE.mpc" 
+
+
+convert "$flnm"  \
+\( -clone 0 -clone 0 -compose screen -composite -alpha set \) \
+\( -clone 1 -blur 0x$blur_val -alpha set -channel a -evaluate set $trans_val% +channel \) \
+-delete 0 -compose multiply -composite \
+"$onm"
+
+
+# ToDo: Apply Luminosity masking to recover sharpness
